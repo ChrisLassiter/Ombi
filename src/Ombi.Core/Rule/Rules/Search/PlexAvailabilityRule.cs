@@ -1,6 +1,5 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
 using Ombi.Core.Models.Search;
 using Ombi.Core.Rule.Interfaces;
 using Ombi.Helpers;
@@ -73,41 +72,17 @@ namespace Ombi.Core.Rule.Rules.Search
                         {
                             foreach (var episode in season.Episodes)
                             {
-                                PlexEpisode epExists = null;
-                                if (useImdb)
-                                {
-                                    epExists = await allEpisodes.FirstOrDefaultAsync(x =>
-                                        x.EpisodeNumber == episode.EpisodeNumber && x.SeasonNumber == season.SeasonNumber &&
-                                        x.Series.ImdbId == item.ImdbId.ToString());
-                                }
-                                if (useTheMovieDb)
-                                {
-                                    epExists = await allEpisodes.FirstOrDefaultAsync(x =>
-                                        x.EpisodeNumber == episode.EpisodeNumber && x.SeasonNumber == season.SeasonNumber &&
-                                        x.Series.TheMovieDbId == item.TheMovieDbId.ToString());
-                                }
-                                if (useTvDb)
-                                {
-                                    epExists = await allEpisodes.FirstOrDefaultAsync(x =>
-                                        x.EpisodeNumber == episode.EpisodeNumber && x.SeasonNumber == season.SeasonNumber &&
-                                        x.Series.TvDbId == item.TvDbId.ToString());
-                                }
-                                
-                                if (epExists != null)
-                                {
-                                    episode.Available = true;
-                                }
+                                await AvailabilityRuleHelper.SingleEpisodeCheck(useImdb, allEpisodes, episode, season, item, useTheMovieDb, useTvDb);
                             }
                         }
 
-                        if (search.SeasonRequests.All(x => x.Episodes.All(e => e.Available)))
-                        {
-                            search.FullyAvailable = true;
-                        }
+                        AvailabilityRuleHelper.CheckForUnairedEpisodes(search);
                     }
                 }
             }
             return Success();
         }
+
+        
     }
 }
